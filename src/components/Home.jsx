@@ -69,35 +69,35 @@ const trendingProducts = [
         video: "https://assets.mixkit.co/videos/preview/mixkit-fashion-woman-with-silver-dress-posing-40019-large.mp4",
         poster: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=800&auto=format&fit=crop",
         name: "Luxury Silver Gown",
-        price: "$280",
+        price: "Rs 280",
         tag: "Exclusive"
     },
     {
         video: "https://assets.mixkit.co/videos/preview/mixkit-model-wearing-a-red-dress-and-posing-40026-large.mp4",
         poster: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800&auto=format&fit=crop",
         name: "Valentino Red Dress",
-        price: "$320",
+        price: "Rs 320",
         tag: "Trending"
     },
     {
         video: "https://assets.mixkit.co/videos/preview/mixkit-girl-in-neon-sign-posing-for-fashion-40012-large.mp4",
         poster: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=800&auto=format&fit=crop",
         name: "Glitter Cyber Gown",
-        price: "$250",
+        price: "RS 250",
         tag: "New Season"
     },
     {
         video: "https://assets.mixkit.co/videos/preview/mixkit-girl-posing-in-shiny-dress-under-blue-light-40018-large.mp4",
         poster: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?q=80&w=800&auto=format&fit=crop",
         name: "Liquid Metal Dress",
-        price: "$190",
+        price: "RS 190",
         tag: "Limited"
     },
     {
         video: "https://assets.mixkit.co/videos/preview/mixkit-woman-posing-in-yellow-sports-bra-and-pants-40015-large.mp4",
         poster: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=800&auto=format&fit=crop",
         name: "Sunburst Silk Suit",
-        price: "$210",
+        price: "Rs 210",
         tag: "Summer 26"
     }
 ];
