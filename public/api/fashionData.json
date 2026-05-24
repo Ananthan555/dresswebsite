@@ -1,0 +1,159 @@
+{
+  "brand": {
+    "name": "Women's Style",
+    "tagline": "Boutique-ready clothing for elevated everyday and occasion dressing."
+  },
+  "navItems": [
+    { "id": 1, "label": "Home", "href": "#home" },
+    { "id": 2, "label": "Collections", "href": "#collections" },
+    { "id": 3, "label": "Trending", "href": "#trending" },
+    { "id": 4, "label": "Lookbook", "href": "#lookbook" },
+    { "id": 5, "label": "Contact", "href": "#contact" }
+  ],
+  "stats": [
+    { "id": 1, "value": "42K+", "label": "Happy customers" },
+    { "id": 2, "value": "180+", "label": "Fresh styles" },
+    { "id": 3, "value": "4.9", "label": "Store rating" }
+  ],
+  "heroSlides": [
+    {
+      "id": 101,
+      "title": "College Churidar Edit",
+      "tag": "Hero edit",
+      "price": "Rs 2,899",
+      "description": "A fresh blue floral churidar set with dupatta, perfect for college days and casual outings.",
+      "image": "https://images.unsplash.com/photo-1632826727346-43a7ac6bcb1b?auto=format&fit=crop&q=80&w=1400",
+      "video": "https://assets.mixkit.co/videos/preview/mixkit-model-wearing-a-red-dress-and-posing-40026-large.mp4"
+    },
+    {
+      "id": 102,
+      "title": "Pastel Churidar Set",
+      "tag": "Summer drop",
+      "price": "Rs 1,799",
+      "description": "Soft pastel salwar/churidar styling with flowing dupatta and boutique finish.",
+      "image": "https://images.pexels.com/photos/26973350/pexels-photo-26973350.jpeg?auto=compress&cs=tinysrgb&w=1400",
+      "video": "https://assets.mixkit.co/videos/preview/mixkit-fashion-woman-with-silver-dress-posing-40019-large.mp4"
+    },
+    {
+      "id": 103,
+      "title": "Embroidered Lehenga",
+      "tag": "Limited run",
+      "price": "Rs 3,249",
+      "description": "A festive lehenga silhouette with ornate embroidery and celebration-ready polish.",
+      "image": "https://images.pexels.com/photos/12752064/pexels-photo-12752064.jpeg?auto=compress&cs=tinysrgb&w=1400",
+      "video": "https://assets.mixkit.co/videos/preview/mixkit-girl-posing-in-shiny-dress-under-blue-light-40018-large.mp4"
+    },
+    {
+      "id": 104,
+      "title": "Modern Kurti Glow",
+      "tag": "Brand reel",
+      "price": "Rs 2,699",
+      "description": "Fresh Indian kurti styling with a flowing dupatta and contemporary festive energy.",
+      "image": "https://images.pexels.com/photos/13584939/pexels-photo-13584939.jpeg?auto=compress&cs=tinysrgb&w=1400",
+      "video": "https://assets.mixkit.co/videos/preview/mixkit-girl-in-neon-sign-posing-for-fashion-40012-large.mp4"
+    }
+  ],
+  "collections": [
+    {
+      "id": 201,
+      "title": "Silk Saree Edit",
+      "count": 36,
+      "description": "Traditional sarees, festive drapes, and rich Indian styling for weddings and celebrations.",
+      "image": "https://images.unsplash.com/photo-1632826727346-43a7ac6bcb1b?auto=format&fit=crop&q=80&w=1400"
+    },
+    {
+      "id": 202,
+      "title": "Kurti & Dupatta",
+      "count": 24,
+      "description": "Everyday Indian kurtis, floral dupattas, and breathable sets with boutique polish.",
+      "image": "https://images.pexels.com/photos/13584944/pexels-photo-13584944.jpeg?auto=compress&cs=tinysrgb&w=1400"
+    },
+    {
+      "id": 203,
+      "title": "Lehenga Moments",
+      "count": 31,
+      "description": "Statement lehengas and ornate festive wear made for engagement, reception, and party looks.",
+      "image": "https://images.pexels.com/photos/6739340/pexels-photo-6739340.jpeg?auto=compress&cs=tinysrgb&w=1400"
+    }
+  ],
+  "products": [
+    {
+      "id": 301,
+      "name": "Red Kurti With Floral Dupatta",
+      "category": "Kurti sets",
+      "badge": "Best seller",
+      "price": "Rs 1,999",
+      "image": "https://images.pexels.com/photos/13584939/pexels-photo-13584939.jpeg?auto=compress&cs=tinysrgb&w=900"
+    },
+    {
+      "id": 302,
+      "name": "Pink Salwar Kameez Set",
+      "category": "Churidar",
+      "badge": "New",
+      "price": "Rs 1,549",
+      "image": "https://images.pexels.com/photos/26973350/pexels-photo-26973350.jpeg?auto=compress&cs=tinysrgb&w=900"
+    },
+    {
+      "id": 303,
+      "name": "Blue Floral Churidar",
+      "category": "College wear",
+      "badge": "Limited",
+      "price": "Rs 2,399",
+      "image": "https://images.unsplash.com/photo-1632826727346-43a7ac6bcb1b?auto=format&fit=crop&q=80&w=900"
+    },
+    {
+      "id": 304,
+      "name": "Bridal Pink Lehenga",
+      "category": "Lehengas",
+      "badge": "Trending",
+      "price": "Rs 2,149",
+      "image": "https://images.pexels.com/photos/13039870/pexels-photo-13039870.jpeg?auto=compress&cs=tinysrgb&w=900"
+    },
+    {
+      "id": 305,
+      "name": "Black Floral Lehenga",
+      "category": "Festive wear",
+      "badge": "Hot",
+      "price": "Rs 1,899",
+      "image": "https://images.pexels.com/photos/12579919/pexels-photo-12579919.jpeg?auto=compress&cs=tinysrgb&w=900"
+    }
+  ],
+  "lookbook": [
+    {
+      "id": 401,
+      "title": "College churidar mood",
+      "mood": "Campus ethnic",
+      "image": "https://images.unsplash.com/photo-1632826727346-43a7ac6bcb1b?auto=format&fit=crop&q=80&w=1100"
+    },
+    {
+      "id": 402,
+      "title": "Churidar studio mood",
+      "mood": "Everyday ethnic",
+      "image": "https://images.pexels.com/photos/13584944/pexels-photo-13584944.jpeg?auto=compress&cs=tinysrgb&w=900"
+    },
+    {
+      "id": 403,
+      "title": "Pastel salwar comfort",
+      "mood": "Soft festive",
+      "image": "https://images.pexels.com/photos/26973350/pexels-photo-26973350.jpeg?auto=compress&cs=tinysrgb&w=900"
+    },
+    {
+      "id": 404,
+      "title": "Modern saree mood",
+      "mood": "Celebration",
+      "image": "https://images.pexels.com/photos/12327758/pexels-photo-12327758.jpeg?auto=compress&cs=tinysrgb&w=900"
+    },
+    {
+      "id": 405,
+      "title": "Reception lehenga glow",
+      "mood": "Wedding",
+      "image": "https://images.pexels.com/photos/34767007/pexels-photo-34767007.jpeg?auto=compress&cs=tinysrgb&w=900"
+    }
+  ],
+  "offer": {
+    "kicker": "Weekend exclusive",
+    "title": "Flat 30% off on new-season dresses.",
+    "description": "Use code STYLE30 on premium dresses, satin slips, and occasion-ready sets.",
+    "cta": "Shop offer"
+  }
+}
