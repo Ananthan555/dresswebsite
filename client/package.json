@@ -1,5 +1,5 @@
 {
-  "name": "dress_website",
+  "name": "dress_website_client",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -28,5 +28,18 @@
     "postcss": "^8.5.15",
     "tailwindcss": "^3.4.19",
     "vite": "^8.0.12"
-  }
+  },
+  "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
+  "main": "eslint.config.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ananthan555/dresswebsite.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Ananthan555/dresswebsite/issues"
+  },
+  "homepage": "https://github.com/Ananthan555/dresswebsite#readme"
 }
