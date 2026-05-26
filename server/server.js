@@ -12,9 +12,23 @@ const MONGO_URL = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/dress_webs
 const JWT_SECRET = process.env.JWT_SECRET || "change-this-secret-key";
 const JWT_EXPIRES_IN = "1d";
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "https://dressweb.vercel.app",
+  process.env.CLIENT_URL,
+].filter(Boolean);
+
 app.use(cors({
-  origin: "http://localhost:5173",
-  credentials: true
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
 }));
 app.use(express.json());
 
