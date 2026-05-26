@@ -77,6 +77,20 @@ app.get("/", (req, res) => {
   res.send("Hello MongoDB");
 });
 
+app.get("/api/health", (req, res) => {
+  const states = {
+    0: "disconnected",
+    1: "connected",
+    2: "connecting",
+    3: "disconnecting",
+  };
+
+  res.json({
+    server: "running",
+    mongodb: states[mongoose.connection.readyState] || "unknown",
+  });
+});
+
 app.post("/api/register", async (req, res) => {
   try {
     const { password } = req.body;
