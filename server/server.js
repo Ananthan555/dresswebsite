@@ -11,6 +11,7 @@ const PORT = process.env.PORT || 5000;
 const MONGO_URL = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/dress_website";
 const JWT_SECRET = process.env.JWT_SECRET || "change-this-secret-key";
 const JWT_EXPIRES_IN = "1d";
+let mongoConnectionError = null;
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -67,11 +68,22 @@ const authenticateToken = (req, res, next) => {
 
 mongoose.connect(MONGO_URL)
   .then(() => {
+    mongoConnectionError = null;
     console.log("MongoDB Connected");
   })
   .catch((err) => {
+    mongoConnectionError = err.message;
     console.error("MongoDB connection error:", err);
   });
+
+mongoose.connection.on("error", (err) => {
+  mongoConnectionError = err.message;
+  console.error("MongoDB runtime error:", err);
+});
+
+mongoose.connection.on("connected", () => {
+  mongoConnectionError = null;
+});
 
 app.get("/", (req, res) => {
   res.send("Hello MongoDB");
@@ -88,6 +100,7 @@ app.get("/api/health", (req, res) => {
   res.json({
     server: "running",
     mongodb: states[mongoose.connection.readyState] || "unknown",
+    mongoError: mongoConnectionError,
   });
 });
 
