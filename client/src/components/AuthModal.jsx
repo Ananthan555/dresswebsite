@@ -64,7 +64,7 @@ function AuthModal({ open, onClose, onAuthSuccess, initialMode = "login" }) {
     return null;
   }
 
-  const backendUrl = "http://localhost:5000";
+  const backendUrl = "https://dress-backend-bgni.onrender.com";
   const submitLabel =
   mode === "login"
     ? "Login"
