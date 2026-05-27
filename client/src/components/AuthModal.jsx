@@ -1,3 +1,4 @@
+import { Eye, EyeOff } from "lucide-react";
 import { useEffect, useState } from "react";
 
 function AuthModal({ open, onClose, onAuthSuccess, initialMode = "login" }) {
@@ -8,15 +9,19 @@ function AuthModal({ open, onClose, onAuthSuccess, initialMode = "login" }) {
   const [emailError, setEmailError] = useState("");
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (open) {
-      setMode(initialMode);
-      setEmail("");
-      setPassword("");
-      setMessage("");
-      setEmailError("");
-      setPasswordStrength(0);
+      queueMicrotask(() => {
+        setMode(initialMode);
+        setEmail("");
+        setPassword("");
+        setMessage("");
+        setEmailError("");
+        setPasswordStrength(0);
+        setShowPassword(false);
+      });
     }
   }, [open, initialMode]);
 
@@ -157,7 +162,7 @@ onAuthSuccess({
   email: data.user.email,
   id: data.user.id,
 });
-    } catch (error) {
+    } catch {
       setMessage("Unable to reach backend. Please try again.");
     } finally {
       setIsLoading(false);
@@ -204,14 +209,23 @@ onAuthSuccess({
 
           <label>
             Password
-            <input
-              type="password"
-              value={password}
-              onChange={handlePasswordChange}
-              placeholder="Enter password"
-              required
-              minLength={6}
-            />
+            <div className="password-field">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={handlePasswordChange}
+                placeholder="Enter password"
+                required
+                minLength={6}
+              />
+              <button
+                type="button"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                onClick={() => setShowPassword((value) => !value)}
+              >
+                {showPassword ? <Eye size={19} /> : <EyeOff size={19} />}
+              </button>
+            </div>
             {mode === "register" && password && (
               <div className="password-strength">
                 <div className="strength-bar" style={{ backgroundColor: getPasswordStrengthColor() }} />

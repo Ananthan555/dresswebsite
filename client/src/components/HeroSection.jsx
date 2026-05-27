@@ -11,7 +11,7 @@ function HeroSection({ slides }) {
     }
 
     const carousel = Carousel.getOrCreateInstance(carouselElement, {
-      interval: 2400,
+      interval: 5200,
       pause: false,
       ride: "carousel",
       touch: true,
@@ -43,7 +43,7 @@ function HeroSection({ slides }) {
           data-bs-touch="true"
           data-bs-pause="false"
           data-bs-wrap="true"
-          data-bs-interval="2400"
+          data-bs-interval="5200"
         >
           <div className="carousel-indicators">
             {slides.map((slide, index) => (

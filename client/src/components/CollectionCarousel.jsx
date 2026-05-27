@@ -12,7 +12,7 @@ function CollectionCarousel({ collections }) {
         id="collectionCarousel"
         className="carousel slide collection-carousel"
         data-bs-ride="carousel"
-        data-bs-interval="4200"
+        data-bs-interval="6200"
       >
         <div className="carousel-inner">
           {collections.map((collection, index) => (

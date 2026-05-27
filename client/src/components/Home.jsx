@@ -13,6 +13,48 @@ import Footer from "./Footer";
 import ProductPage from "./ProductPage";
 import "./Home.css";
 
+const getUserStorageKey = (userId) => `dress_website_store_${userId}`;
+
+const readUserStore = (userId) => {
+  if (!userId) {
+    return { likedItems: [], cartItems: [] };
+  }
+
+  try {
+    const savedStore = window.localStorage.getItem(getUserStorageKey(userId));
+    if (!savedStore) {
+      return { likedItems: [], cartItems: [] };
+    }
+
+    const parsedStore = JSON.parse(savedStore);
+    return {
+      likedItems: Array.isArray(parsedStore.likedItems) ? parsedStore.likedItems : [],
+      cartItems: Array.isArray(parsedStore.cartItems) ? parsedStore.cartItems : [],
+    };
+  } catch {
+    return { likedItems: [], cartItems: [] };
+  }
+};
+
+const readSavedSession = () => {
+  try {
+    const savedUser = window.localStorage.getItem("dress_website_user");
+    if (!savedUser) {
+      return { authUser: null, likedItems: [], cartItems: [] };
+    }
+
+    const parsedUser = JSON.parse(savedUser);
+    const userStore = readUserStore(parsedUser.id);
+    return {
+      authUser: parsedUser,
+      likedItems: userStore.likedItems,
+      cartItems: userStore.cartItems,
+    };
+  } catch {
+    return { authUser: null, likedItems: [], cartItems: [] };
+  }
+};
+
 const extraTrendingProducts = [
   {
     id: 306,
@@ -117,21 +159,15 @@ const earringProducts = [
 
 function Home() {
   const { data, loading, error } = useFashionData();
+  const [initialSession] = useState(readSavedSession);
   const [view, setView] = useState("home");
-  const [likedItems, setLikedItems] = useState([]);
-  const [cartItems, setCartItems] = useState([]);
-  const [authUser, setAuthUser] = useState(null);
+  const [likedItems, setLikedItems] = useState(initialSession.likedItems);
+  const [cartItems, setCartItems] = useState(initialSession.cartItems);
+  const [authUser, setAuthUser] = useState(initialSession.authUser);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState("login");
   const [pendingAction, setPendingAction] = useState(null);
   const [lastCartTarget, setLastCartTarget] = useState({ view: "home", target: "#trending" });
-
-  useEffect(() => {
-    const savedUser = window.localStorage.getItem("dress_website_user");
-    if (savedUser) {
-      setAuthUser(JSON.parse(savedUser));
-    }
-  }, []);
 
   useEffect(() => {
     if (authUser) {
@@ -141,6 +177,17 @@ function Home() {
     }
   }, [authUser]);
 
+  useEffect(() => {
+    if (!authUser?.id) {
+      return;
+    }
+
+    window.localStorage.setItem(
+      getUserStorageKey(authUser.id),
+      JSON.stringify({ likedItems, cartItems })
+    );
+  }, [authUser?.id, likedItems, cartItems]);
+
   const allTrendingProducts = useMemo(() => {
     if (!data?.products) {
       return [];
@@ -149,8 +196,61 @@ function Home() {
     return [...data.products, ...extraTrendingProducts];
   }, [data]);
 
-  const navigate = (nextView, target) => {
-    if (nextView === "cart" && !authUser) {
+  useEffect(() => {
+    const handleBrowserNavigation = (event) => {
+      const nextView = event.state?.view || "home";
+      const nextTarget = event.state?.target;
+
+      setView(nextView);
+      if (nextTarget) {
+        window.setTimeout(() => {
+          document.querySelector(nextTarget)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 0);
+      } else {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    };
+
+    const initialTarget = window.location.hash || undefined;
+    window.history.replaceState({ view: "home", target: initialTarget }, "", initialTarget || window.location.pathname);
+    window.addEventListener("popstate", handleBrowserNavigation);
+    return () => window.removeEventListener("popstate", handleBrowserNavigation);
+  }, []);
+
+  useEffect(() => {
+    const isCompactViewport = window.matchMedia("(max-width: 980px)").matches;
+    const revealItems = document.querySelectorAll(
+      ".section-heading, .collection-carousel, .product-card, .look-card, .offer-banner, .newsletter, .cart-item-card, .order-summary-card, .empty-state"
+    );
+
+    revealItems.forEach((item, index) => {
+      item.classList.add("scroll-reveal");
+      item.classList.remove("is-visible");
+      item.style.setProperty("--reveal-delay", `${Math.min(index % 6, 4) * (isCompactViewport ? 45 : 70)}ms`);
+    });
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        threshold: isCompactViewport ? 0.04 : 0.16,
+        rootMargin: isCompactViewport ? "0px 0px -2% 0px" : "0px 0px -8% 0px",
+      }
+    );
+
+    revealItems.forEach((item) => observer.observe(item));
+
+    return () => observer.disconnect();
+  }, [view, data, likedItems.length, cartItems.length]);
+
+  const navigate = (nextView, target, options = {}) => {
+    if ((nextView === "cart" || nextView === "likes") && !authUser) {
       setPendingAction(null);
       setAuthModalMode("login");
       setAuthModalOpen(true);
@@ -158,6 +258,11 @@ function Home() {
     }
 
     setView(nextView);
+    if (options.pushState !== false) {
+      const nextUrl = target || (nextView === "home" ? "#home" : `#${nextView}`);
+      window.history.pushState({ view: nextView, target }, "", nextUrl);
+    }
+
     if (target) {
       window.setTimeout(() => {
         document.querySelector(target)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -213,7 +318,10 @@ function Home() {
   };
 
   const handleAuthSuccess = (user) => {
+    const userStore = readUserStore(user.id);
     setAuthUser(user);
+    setLikedItems(userStore.likedItems);
+    setCartItems(userStore.cartItems);
     setAuthModalOpen(false);
 
     if (!pendingAction) {
@@ -261,8 +369,29 @@ function Home() {
 
   const handleLogout = () => {
     setAuthUser(null);
+    setLikedItems([]);
+    setCartItems([]);
     setPendingAction(null);
-    setView("home");
+    navigate("home", "#home");
+  };
+
+  const handleSearch = (term) => {
+    const normalizedTerm = term.trim().toLowerCase();
+    if (!normalizedTerm) {
+      return false;
+    }
+
+    if (["earring", "earrings", "jhumka", "hoop", "stud"].some((word) => normalizedTerm.includes(word))) {
+      navigate("earrings");
+      return true;
+    }
+
+    if (["dress", "dresses", "kurti", "style", "trending", "wear"].some((word) => normalizedTerm.includes(word))) {
+      navigate("trending");
+      return true;
+    }
+
+    return false;
   };
 
   if (loading) {
@@ -293,6 +422,7 @@ function Home() {
         authUser={authUser}
         onAccount={handleAccountClick}
         onLogout={handleLogout}
+        onSearch={handleSearch}
       />
       {view === "home" && (
         <>

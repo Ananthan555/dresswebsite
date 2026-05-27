@@ -2,14 +2,26 @@ import { Heart, Menu, Search, ShoppingBag, UserRound, X } from "lucide-react";
 import { useState } from "react";
 import logoImg from "../assets/logo.png";
 
-function BrandNavbar({ brand, navItems, onNavigate, likedCount = 0, cartCount = 0, authUser, onAccount, onLogout }) {
+function BrandNavbar({ brand, navItems, onNavigate, likedCount = 0, cartCount = 0, authUser, onAccount, onLogout, onSearch }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const closeMenu = () => setIsOpen(false);
 
   const navigate = (view, target) => {
     closeMenu();
     onNavigate?.(view, target);
+  };
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    const handled = onSearch?.(searchTerm);
+    if (handled) {
+      setSearchTerm("");
+      setSearchOpen(false);
+      closeMenu();
+    }
   };
 
   return (
@@ -35,9 +47,29 @@ function BrandNavbar({ brand, navItems, onNavigate, likedCount = 0, cartCount = 
         </ul>
 
         <div className="nav-actions">
-          <button type="button" aria-label="Search">
-            <Search size={19} />
-          </button>
+          <form className={`nav-search ${searchOpen ? "is-open" : ""}`} onSubmit={handleSearchSubmit}>
+            {searchOpen && (
+              <input
+                type="search"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Search"
+                aria-label="Search products"
+                autoFocus
+              />
+            )}
+            <button
+              type={searchOpen ? "submit" : "button"}
+              aria-label="Search"
+              onClick={() => {
+                if (!searchOpen) {
+                  setSearchOpen(true);
+                }
+              }}
+            >
+              <Search size={19} />
+            </button>
+          </form>
           <button className="nav-count-button" type="button" aria-label="Wishlist" onClick={() => navigate("likes")}>
             <Heart size={19} />
             {likedCount > 0 && <span>{likedCount}</span>}
@@ -80,6 +112,16 @@ function BrandNavbar({ brand, navItems, onNavigate, likedCount = 0, cartCount = 
         ))}
         <button type="button" onClick={() => navigate("likes")}>My Likes</button>
         <button type="button" onClick={() => navigate("cart")}>My Cart</button>
+        <form className="mobile-search" onSubmit={handleSearchSubmit}>
+          <input
+            type="search"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Search dress or earrings"
+            aria-label="Search products"
+          />
+          <button type="submit">Search</button>
+        </form>
         {authUser ? (
           <button type="button" onClick={onLogout}>Logout</button>
         ) : (
