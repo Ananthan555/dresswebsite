@@ -996,15 +996,15 @@ input {
   overflow-x: auto;
   padding: 8px 2px 24px;
   scroll-snap-type: x mandatory;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
 }
 
 .product-scroll::-webkit-scrollbar {
-  height: 8px;
-}
-
-.product-scroll::-webkit-scrollbar-thumb {
-  background: #6850fc;
-  border-radius: 999px;
+  display: none;
+  height: 0;
+  background: transparent;
 }
 
 .product-card {
