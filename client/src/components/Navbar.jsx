@@ -40,7 +40,8 @@ function BrandNavbar({ brand, navItems, onNavigate, likedCount = 0, cartCount = 
             <li key={item.id}>
               <a href={item.href} onClick={(event) => {
                 event.preventDefault();
-                navigate("home", item.href);
+                const viewName = String(item.href || "").replace(/^#/, "") || "home";
+                navigate(viewName, item.href);
               }}>{item.label}</a>
             </li>
           ))}
@@ -105,7 +106,8 @@ function BrandNavbar({ brand, navItems, onNavigate, likedCount = 0, cartCount = 
         {navItems.map((item) => (
           <a key={item.id} href={item.href} onClick={(event) => {
             event.preventDefault();
-            navigate("home", item.href);
+            const viewName = String(item.href || "").replace(/^#/, "") || "home";
+            navigate(viewName, item.href);
           }}>
             {item.label}
           </a>

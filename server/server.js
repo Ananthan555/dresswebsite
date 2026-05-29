@@ -33,17 +33,19 @@ app.use(cors({
 app.use(express.json());
 
 const userSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+  phone: { type: String, required: true, unique: true, sparse: true, trim: true },
+  email: { type: String, lowercase: true, trim: true },
   password: { type: String, required: true },
 }, { timestamps: true });
 
 const User = mongoose.model("User", userSchema);
 
-const normalizeEmail = (email) => email?.toLowerCase().trim();
+const normalizePhone = (phone) => String(phone || "").replace(/\D/g, "");
+const isValidPhone = (phone) => /^\d{10}$/.test(phone);
 
 const createToken = (user) => {
   return jwt.sign(
-    { id: user._id, email: user.email },
+    { id: user._id, phone: user.phone },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN }
   );
@@ -80,26 +82,30 @@ app.get("/", (req, res) => {
 app.post("/api/register", async (req, res) => {
   try {
     const { password } = req.body;
-    const email = normalizeEmail(req.body.email);
+    const phone = normalizePhone(req.body.phone);
 
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required." });
+    if (!phone || !password) {
+      return res.status(400).json({ error: "Phone number and password are required." });
     }
 
-    const existingUser = await User.findOne({ email });
+    if (!isValidPhone(phone)) {
+      return res.status(400).json({ error: "Please enter a valid 10 digit phone number." });
+    }
+
+    const existingUser = await User.findOne({ phone });
     if (existingUser) {
-      return res.status(409).json({ error: "Email already registered." });
+      return res.status(409).json({ error: "Phone number already registered." });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ email, password: hashedPassword });
+    const user = new User({ phone, password: hashedPassword });
     await user.save();
     const token = createToken(user);
 
     return res.status(201).json({
       message: "Account created successfully.",
       token,
-      user: { id: user._id, email: user.email },
+      user: { id: user._id, phone: user.phone },
     });
   } catch (error) {
     console.error(error);
@@ -110,20 +116,24 @@ app.post("/api/register", async (req, res) => {
 app.post("/api/login", async (req, res) => {
   try {
     const { password } = req.body;
-    const email = normalizeEmail(req.body.email);
+    const phone = normalizePhone(req.body.phone);
 
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required." });
+    if (!phone || !password) {
+      return res.status(400).json({ error: "Phone number and password are required." });
     }
 
-    const user = await User.findOne({ email });
+    if (!isValidPhone(phone)) {
+      return res.status(400).json({ error: "Please enter a valid 10 digit phone number." });
+    }
+
+    const user = await User.findOne({ phone });
     if (!user) {
-      return res.status(401).json({ error: "Invalid email or password." });
+      return res.status(401).json({ error: "Invalid phone number or password." });
     }
 
     const passwordMatches = await bcrypt.compare(password, user.password);
     if (!passwordMatches) {
-      return res.status(401).json({ error: "Invalid email or password." });
+      return res.status(401).json({ error: "Invalid phone number or password." });
     }
 
     const token = createToken(user);
@@ -131,7 +141,7 @@ app.post("/api/login", async (req, res) => {
     return res.json({
       message: "Login successful.",
       token,
-      user: { id: user._id, email: user.email },
+      user: { id: user._id, phone: user.phone },
     });
   } catch (error) {
     console.error(error);
@@ -143,19 +153,23 @@ app.post("/api/login", async (req, res) => {
 app.post("/api/reset-password", async (req, res) => {
   try {
     const { password } = req.body;
-    const email = normalizeEmail(req.body.email);
+    const phone = normalizePhone(req.body.phone);
 
-    if (!email || !password) {
+    if (!phone || !password) {
       return res.status(400).json({
-        error: "Email and new password are required."
+        error: "Phone number and new password are required."
       });
     }
 
-    const user = await User.findOne({ email });
+    if (!isValidPhone(phone)) {
+      return res.status(400).json({ error: "Please enter a valid 10 digit phone number." });
+    }
+
+    const user = await User.findOne({ phone });
 
     if (!user) {
       return res.status(404).json({
-        error: "No account found with this email."
+        error: "No account found with this phone number."
       });
     }
 

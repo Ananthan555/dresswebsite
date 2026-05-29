@@ -3,10 +3,10 @@ import { useEffect, useState } from "react";
 
 function AuthModal({ open, onClose, onAuthSuccess, initialMode = "login" }) {
   const [mode, setMode] = useState(initialMode);
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
-  const [emailError, setEmailError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -15,31 +15,29 @@ function AuthModal({ open, onClose, onAuthSuccess, initialMode = "login" }) {
     if (open) {
       queueMicrotask(() => {
         setMode(initialMode);
-        setEmail("");
+        setPhone("");
         setPassword("");
         setMessage("");
-        setEmailError("");
+        setPhoneError("");
         setPasswordStrength(0);
         setShowPassword(false);
       });
     }
   }, [open, initialMode]);
 
-  const validateEmail = (value) => {
-    if (!value) {
-      setEmailError("");
+  const normalizePhone = (value) => value.replace(/\D/g, "");
+
+  const validatePhone = (value) => {
+    const digits = normalizePhone(value);
+    if (!digits) {
+      setPhoneError("");
       return true;
     }
-    if (!value.includes("@")) {
-      setEmailError("Email must contain @");
+    if (!/^\d{10}$/.test(digits)) {
+      setPhoneError("Please enter a valid 10 digit phone number");
       return false;
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(value)) {
-      setEmailError("Please enter a valid email address");
-      return false;
-    }
-    setEmailError("");
+    setPhoneError("");
     return true;
   };
 
@@ -53,10 +51,10 @@ function AuthModal({ open, onClose, onAuthSuccess, initialMode = "login" }) {
     setPasswordStrength(strength);
   };
 
-  const handleEmailChange = (event) => {
+  const handlePhoneChange = (event) => {
     const value = event.target.value;
-    setEmail(value);
-    validateEmail(value);
+    setPhone(value);
+    validatePhone(value);
   };
 
   const handlePasswordChange = (event) => {
@@ -85,7 +83,7 @@ function AuthModal({ open, onClose, onAuthSuccess, initialMode = "login" }) {
   }
 
   setMessage("");
-  setEmailError("");
+  setPhoneError("");
 };
 
   const getPasswordStrengthLabel = () => {
@@ -106,14 +104,14 @@ function AuthModal({ open, onClose, onAuthSuccess, initialMode = "login" }) {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedPhone = normalizePhone(phone);
 
-    if (!normalizedEmail || !password) {
-      setMessage("Please enter both email and password.");
+    if (!normalizedPhone || !password) {
+      setMessage("Please enter both phone number and password.");
       return;
     }
 
-    if (!validateEmail(normalizedEmail)) {
+    if (!validatePhone(normalizedPhone)) {
       return;
     }
 
@@ -134,7 +132,7 @@ function AuthModal({ open, onClose, onAuthSuccess, initialMode = "login" }) {
 const response = await fetch(`${backendUrl}/api/${endpoint}`,{
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: normalizedEmail, password }),
+        body: JSON.stringify({ phone: normalizedPhone, password }),
       });
       const data = await response.json();
 
@@ -159,7 +157,7 @@ const response = await fetch(`${backendUrl}/api/${endpoint}`,{
      localStorage.setItem("token", data.token);
 
 onAuthSuccess({
-  email: data.user.email,
+  phone: data.user.phone,
   id: data.user.id,
 });
     } catch {
@@ -195,16 +193,18 @@ onAuthSuccess({
 
         <form className="auth-modal-form" onSubmit={handleSubmit}>
           <label>
-            Email address
+            Phone number
             <input
-              type="email"
-              value={email}
-              onChange={handleEmailChange}
-              placeholder="you@example.com"
+              type="tel"
+              value={phone}
+              onChange={handlePhoneChange}
+              placeholder="Enter 10 digit phone number"
               required
-              className={emailError ? "input-error" : ""}
+              inputMode="numeric"
+              maxLength={10}
+              className={phoneError ? "input-error" : ""}
             />
-            {emailError && <span className="input-error-text">{emailError}</span>}
+            {phoneError && <span className="input-error-text">{phoneError}</span>}
           </label>
 
           <label>

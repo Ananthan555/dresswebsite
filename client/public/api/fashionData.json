@@ -5,10 +5,9 @@
   },
   "navItems": [
     { "id": 1, "label": "Home", "href": "#home" },
-    { "id": 2, "label": "Collections", "href": "#collections" },
-    { "id": 3, "label": "Trending", "href": "#trending" },
-    { "id": 4, "label": "Lookbook", "href": "#lookbook" },
-    { "id": 5, "label": "Contact", "href": "#contact" }
+    { "id": 2, "label": "Women's dress", "href": "#womens" },
+    { "id": 3, "label": "Jewellery", "href": "#jewellery" },
+    { "id": 4, "label": "About", "href": "#about" }
   ],
   "stats": [
     { "id": 1, "value": "42K+", "label": "Happy customers" },

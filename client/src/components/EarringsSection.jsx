@@ -1,6 +1,6 @@
 import { ProductCard } from "./TrendingProducts";
 
-function EarringsSection({ products, likedItems, onLike, onAddToCart, onShowMore }) {
+function EarringsSection({ products, likedItems, onLike, onAddToCart, onShowMore, onOpenProduct }) {
   return (
     <section className="section-block product-section" id="earrings">
       <div className="section-heading">
@@ -16,6 +16,7 @@ function EarringsSection({ products, likedItems, onLike, onAddToCart, onShowMore
             isLiked={likedItems.some((item) => item.id === product.id)}
             onLike={onLike}
             onAddToCart={onAddToCart}
+            onOpenProduct={onOpenProduct}
           />
         ))}
       </div>

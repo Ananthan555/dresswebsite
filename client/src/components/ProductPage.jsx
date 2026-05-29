@@ -1,5 +1,6 @@
-import { ArrowLeft, Minus, Plus, ShoppingBag, Trash2, Truck } from "lucide-react";
+import { ArrowLeft, Minus, Plus, ShoppingBag, Trash2, Truck, Search } from "lucide-react";
 import { ProductCard } from "./TrendingProducts";
+import { useMemo, useState } from "react";
 
 const getPriceValue = (price) => {
   const amount = String(price).replace(/[^\d]/g, "");
@@ -34,11 +35,12 @@ function CartView({ title, eyebrow, products, onRemoveFromCart, onUpdateCartQuan
               const itemSubtotal = unitPrice * quantity;
 
               return (
-                <article className="cart-item-card" key={product.id}>
+                <article className="cart-item-card" key={product.cartKey || `${product.id}-${product.selectedSize || "default"}`}>
                   <img src={product.image} alt={product.name} />
                   <div className="cart-item-info">
                     <h3>{product.name}</h3>
                     <p>Unit Price: {formatPrice(unitPrice)}</p>
+                    {product.selectedSize && <p>Size: {product.selectedSize}</p>}
                     <div className="cart-quantity-row">
                       <button
                         type="button"
@@ -116,7 +118,17 @@ function CartView({ title, eyebrow, products, onRemoveFromCart, onUpdateCartQuan
   );
 }
 
-function ProductPage({ title, eyebrow, products, likedItems, onLike, onAddToCart, onRemoveFromCart, onUpdateCartQuantity, onRemoveFromLike, isCartView = false, isLikesView = false, onBack }) {
+function ProductPage({ title, eyebrow, products, likedItems, onLike, onAddToCart, onBuyNow, onRemoveFromCart, onUpdateCartQuantity, onRemoveFromLike, isCartView = false, isLikesView = false, onBack, onOpenProduct }) {
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredProducts = useMemo(() => {
+    if (!searchTerm) return products;
+    const t = String(searchTerm).trim().toLowerCase();
+    return products.filter((p) => (
+      String(p.name || "").toLowerCase().includes(t) || String(p.category || "").toLowerCase().includes(t)
+    ));
+  }, [products, searchTerm]);
+
   if (isCartView) {
     return (
       <CartView
@@ -135,25 +147,40 @@ function ProductPage({ title, eyebrow, products, likedItems, onLike, onAddToCart
       <div className="section-heading page-heading">
         <span>{eyebrow}</span>
         <h2>{title}</h2>
+        <div className="page-controls">
+          <label className="page-search">
+            <Search size={16} />
+            <input
+              type="search"
+              placeholder="Search within this section"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="Search within section"
+            />
+          </label>
+        </div>
         <button className="back-btn" type="button" onClick={onBack}>
           <ArrowLeft size={18} />
           Back Home
         </button>
       </div>
 
-      {products.length > 0 ? (
+
+      {filteredProducts.length > 0 ? (
         <div className="product-grid-page">
-          {products.map((product) => (
+          {filteredProducts.map((product) => (
             <ProductCard
               key={product.id}
               product={product}
               isLiked={likedItems.some((item) => item.id === product.id)}
               onLike={onLike}
               onAddToCart={onAddToCart}
+              onBuyNow={onBuyNow}
               onRemoveFromCart={onRemoveFromCart}
               onRemoveFromLike={onRemoveFromLike}
               isCartView={isCartView}
               isLikesView={isLikesView}
+              onOpenProduct={onOpenProduct}
             />
           ))}
         </div>

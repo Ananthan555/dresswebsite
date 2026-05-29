@@ -1,18 +1,13 @@
-import { Send } from "lucide-react";
-
 function Newsletter() {
   return (
-    <section className="newsletter" id="contact">
+    <section className="newsletter" id="about">
       <div>
-        <span>Private access</span>
-        <h2>Get early drops before the collection sells out.</h2>
+        <span>About</span>
+        <h2>Visit our store</h2>
+        <p>Aruppukottai Min roadd, Bus stand</p>
+        <p>Kriyapatti - 626 106.</p>
+        <p>Mobile : 91506 48548, 8098954035</p>
       </div>
-      <form>
-        <input type="email" placeholder="Enter email address" aria-label="Email address" />
-        <button type="submit" aria-label="Subscribe">
-          <Send size={18} />
-        </button>
-      </form>
     </section>
   );
 }
