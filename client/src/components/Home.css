@@ -253,6 +253,10 @@ input {
   white-space: nowrap;
 }
 
+.auth-action-icon {
+  display: none;
+}
+
 .nav-count-button {
   position: relative;
 }
@@ -578,6 +582,11 @@ input {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   cursor: pointer;
+}
+
+.auth-modal-submit:disabled {
+  cursor: wait;
+  opacity: 0.78;
 }
 
 .forgot-password-btn {
@@ -1933,25 +1942,6 @@ input {
     background: rgba(255, 255, 255, 0.86);
   }
 
-  .mobile-search {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 8px;
-  }
-
-  .mobile-search input {
-    min-width: 0;
-    min-height: 46px;
-    border: 1px solid rgba(21, 19, 35, 0.16);
-    border-radius: 8px;
-    padding: 0 12px;
-  }
-
-  .mobile-search button {
-    min-width: 82px;
-    text-align: center;
-  }
-
   .hero-section {
     min-height: auto;
     grid-template-columns: 1fr;
@@ -2037,7 +2027,7 @@ input {
   }
 
   .brand-mark span {
-    max-width: 88px;
+    max-width: 76px;
     font-size: 0.7rem;
     line-height: 1.1;
   }
@@ -2072,13 +2062,33 @@ input {
 
   .nav-actions button {
     width: 32px;
+    min-width: 32px;
     height: 32px;
+    padding: 0;
     border-radius: 8px;
   }
 
   .nav-actions button svg {
     width: 17px;
     height: 17px;
+  }
+
+  .auth-action-button {
+    width: 32px;
+    min-width: 32px;
+  }
+
+  .auth-action-icon {
+    display: block;
+  }
+
+  .auth-action-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
   .hero-stats {

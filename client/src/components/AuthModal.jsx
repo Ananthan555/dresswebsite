@@ -1,6 +1,9 @@
 import { Eye, EyeOff } from "lucide-react";
 import { useEffect, useState } from "react";
 
+const backendUrl = "https://dress-backend-bgni.onrender.com";
+const AUTH_TIMEOUT_MS = 12000;
+
 function AuthModal({ open, onClose, onAuthSuccess, initialMode = "login" }) {
   const [mode, setMode] = useState(initialMode);
   const [phone, setPhone] = useState("");
@@ -20,6 +23,7 @@ function AuthModal({ open, onClose, onAuthSuccess, initialMode = "login" }) {
         setMessage("");
         setPhoneError("");
         setPasswordStrength(0);
+        setIsLoading(false);
         setShowPassword(false);
       });
     }
@@ -67,13 +71,18 @@ function AuthModal({ open, onClose, onAuthSuccess, initialMode = "login" }) {
     return null;
   }
 
-  const backendUrl = "https://dress-backend-bgni.onrender.com";
   const submitLabel =
   mode === "login"
     ? "Login"
     : mode === "register"
     ? "Create account"
     : "Reset Password";
+  const loadingLabel =
+  mode === "login"
+    ? "Logging in..."
+    : mode === "register"
+    ? "Creating account..."
+    : "Resetting password...";
   const toggleMode = () => {
 
   if (mode === "login") {
@@ -85,6 +94,11 @@ function AuthModal({ open, onClose, onAuthSuccess, initialMode = "login" }) {
   setMessage("");
   setPhoneError("");
 };
+
+  const showAuthAlert = (text) => {
+    setMessage(text);
+    window.alert(text);
+  };
 
   const getPasswordStrengthLabel = () => {
     if (passwordStrength === 0) return "";
@@ -123,6 +137,9 @@ function AuthModal({ open, onClose, onAuthSuccess, initialMode = "login" }) {
     setIsLoading(true);
     setMessage("");
 
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), AUTH_TIMEOUT_MS);
+
     try {
       const endpoint =
   mode === "forgot"
@@ -133,36 +150,49 @@ const response = await fetch(`${backendUrl}/api/${endpoint}`,{
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: normalizedPhone, password }),
+        signal: controller.signal,
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setMessage(data?.error || "Unable to complete request.");
+        showAuthAlert(data?.error || "Unable to complete request.");
         return;
       }
        if (mode === "forgot") {
-  setMessage("Password reset successful. Please login.");
+  showAuthAlert("Password reset successful. Please login.");
   setMode("login");
   setPassword("");
   return;
 }
 
       if (mode === "register") {
-        setMessage("Account created. Please login now.");
+        showAuthAlert("Account created successfully. Please login now.");
         setMode("login");
         setPassword("");
         return;
       }
 
+      if (!data?.token || !data?.user?.phone || !data?.user?.id) {
+        showAuthAlert("Login failed. Please check your phone number and password.");
+        return;
+      }
+
      localStorage.setItem("token", data.token);
+
+      window.alert("Login successful.");
 
 onAuthSuccess({
   phone: data.user.phone,
   id: data.user.id,
 });
-    } catch {
-      setMessage("Unable to reach backend. Please try again.");
+    } catch (error) {
+      const errorMessage =
+        error.name === "AbortError"
+          ? "Login is taking too long. Please try again in a moment."
+          : "Unable to reach backend. Please try again.";
+      showAuthAlert(errorMessage);
     } finally {
+      window.clearTimeout(timeoutId);
       setIsLoading(false);
     }
   };
@@ -237,7 +267,7 @@ onAuthSuccess({
           {message && <p className="auth-modal-message">{message}</p>}
 
           <button className="auth-modal-submit" type="submit" disabled={isLoading}>
-            {isLoading ? "Please wait..." : submitLabel}
+            {isLoading ? loadingLabel : submitLabel}
           </button>
         </form>
 
