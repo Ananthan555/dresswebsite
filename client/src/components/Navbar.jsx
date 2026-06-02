@@ -1,4 +1,4 @@
-import { Heart, LogOut, Menu, Search, ShoppingBag, UserRound, X } from "lucide-react";
+import { Heart, LogOut, Menu, ReceiptText, Search, ShoppingBag, UserRound, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import logoImg from "../assets/logo.png";
 
@@ -108,6 +108,11 @@ function BrandNavbar({ brand, navItems, onNavigate, likedCount = 0, cartCount = 
             <ShoppingBag size={19} />
             {cartCount > 0 && <span>{cartCount}</span>}
           </button>
+          {authUser && (
+            <button type="button" aria-label="Payments" onClick={() => navigate("payments")}>
+              <ReceiptText size={19} />
+            </button>
+          )}
           <button
             className="menu-toggle"
             type="button"
@@ -135,6 +140,7 @@ function BrandNavbar({ brand, navItems, onNavigate, likedCount = 0, cartCount = 
         ))}
         <button type="button" onClick={() => navigate("likes")}>My Likes</button>
         <button type="button" onClick={() => navigate("cart")}>My Cart</button>
+        {authUser && <button type="button" onClick={() => navigate("payments")}>My Payments</button>}
         {authUser ? (
           <button type="button" onClick={onLogout}>Logout</button>
         ) : (

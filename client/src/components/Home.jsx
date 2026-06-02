@@ -74,6 +74,107 @@ const readSavedSession = () => {
   }
 };
 
+const formatOrderPrice = (amount) => `Rs ${Number(amount || 0).toLocaleString("en-IN")}`;
+
+const formatOrderDate = (date) => {
+  if (!date) return "";
+  return new Intl.DateTimeFormat("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(date));
+};
+
+function OrderReceipt({ order }) {
+  if (!order) return null;
+
+  return (
+    <section className="payment-receipt" id="payment-receipt">
+      <div className="receipt-header">
+        <div>
+          <p>Women's Style</p>
+          <h2>Payment Receipt</h2>
+        </div>
+        <span className="receipt-status">Paid</span>
+      </div>
+      <div className="receipt-meta">
+        <div>
+          <span>Order ID</span>
+          <strong>{order.id}</strong>
+        </div>
+        <div>
+          <span>Payment ID</span>
+          <strong>{order.razorpayPaymentId || "Pending"}</strong>
+        </div>
+        <div>
+          <span>Date</span>
+          <strong>{formatOrderDate(order.paidAt || order.createdAt)}</strong>
+        </div>
+      </div>
+      <div className="receipt-items">
+        {(order.items || []).map((item) => (
+          <div className="receipt-item" key={`${item.productId}-${item.selectedSize || "default"}`}>
+            <div>
+              <strong>{item.name}</strong>
+              <span>
+                {item.category}
+                {item.selectedSize ? ` / Size ${item.selectedSize}` : ""}
+              </span>
+            </div>
+            <span>{item.quantity} x {formatOrderPrice(item.unitPrice)}</span>
+          </div>
+        ))}
+      </div>
+      <div className="receipt-total">
+        <span>Total Paid</span>
+        <strong>{formatOrderPrice(order.amount)}</strong>
+      </div>
+    </section>
+  );
+}
+
+function PaymentsPage({ orders, isLoading, onBack, onRefresh, onOpenReceipt, onPrint }) {
+  return (
+    <main className="page-view payments-page-view">
+      <div className="section-heading page-heading">
+        <span>Payments</span>
+        <h2>Your paid orders</h2>
+        <button className="back-btn" type="button" onClick={onBack}>Back Home</button>
+      </div>
+      <div className="payments-toolbar">
+        <button type="button" onClick={onRefresh} disabled={isLoading}>
+          {isLoading ? "Loading..." : "Refresh Payments"}
+        </button>
+      </div>
+      {orders.length > 0 ? (
+        <div className="payments-list">
+          {orders.map((order) => (
+            <article className="payment-order-card" key={order.id}>
+              <div>
+                <p>Order #{String(order.id).slice(-8)}</p>
+                <h3>{formatOrderPrice(order.amount)}</h3>
+                <span>{formatOrderDate(order.paidAt || order.createdAt)}</span>
+              </div>
+              <div className="payment-order-items">
+                {(order.items || []).slice(0, 2).map((item) => (
+                  <span key={`${order.id}-${item.productId}`}>{item.name} x {item.quantity}</span>
+                ))}
+              </div>
+              <div className="payment-order-actions">
+                <button type="button" onClick={() => onOpenReceipt(order)}>View Receipt</button>
+                <button type="button" onClick={() => onPrint(order)}>Print / PDF</button>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="empty-state">
+          <p>{isLoading ? "Loading your payments..." : "No paid orders found yet."}</p>
+        </div>
+      )}
+    </main>
+  );
+}
+
 const extraTrendingProducts = [
   {
     id: 306,
@@ -856,6 +957,8 @@ function Home() {
   const [detailReturnTarget, setDetailReturnTarget] = useState({ view: "home", target: "#trending" });
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
   const historyReadyRef = useRef(false);
 
   useEffect(() => {
@@ -980,8 +1083,14 @@ function Home() {
     return () => observer.disconnect();
   }, [view, data, likedItems.length, cartItems.length]);
 
+  useEffect(() => {
+    if (view === "payments" && authUser) {
+      loadOrders();
+    }
+  }, [view, authUser]);
+
   const navigate = (nextView, target, options = {}) => {
-    if ((nextView === "cart" || nextView === "likes") && !authUser) {
+    if ((nextView === "cart" || nextView === "likes" || nextView === "payments") && !authUser) {
       setPendingAction(null);
       setAuthModalMode("login");
       setAuthModalOpen(true);
@@ -1075,6 +1184,97 @@ function Home() {
     navigate(lastCartTarget.view, lastCartTarget.target, lastCartTarget);
   };
 
+  const showOrderReceipt = (order) => {
+    setConfirmedOrder({
+      ...order,
+      itemCount: (order.items || []).reduce((total, item) => total + item.quantity, 0),
+    });
+    navigate("order-confirmed", undefined);
+  };
+
+  const printOrderReceipt = (order = confirmedOrder) => {
+    if (order) {
+      setConfirmedOrder({
+        ...order,
+        itemCount: (order.items || []).reduce((total, item) => total + item.quantity, 0),
+      });
+    }
+
+    window.setTimeout(() => {
+      window.print();
+    }, 80);
+  };
+
+  const loadOrders = async () => {
+    const token = window.localStorage.getItem("token");
+    if (!token) {
+      setAuthModalMode("login");
+      setAuthModalOpen(true);
+      return;
+    }
+
+    setIsLoadingOrders(true);
+    try {
+      const response = await fetch(`${backendUrl}/api/orders`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Unable to load payments.");
+      }
+
+      setOrders(Array.isArray(data.orders) ? data.orders : []);
+    } catch (error) {
+      window.alert(error.message || "Unable to load payments.");
+    } finally {
+      setIsLoadingOrders(false);
+    }
+  };
+
+  const syncPaymentStatus = async (orderId, source, items) => {
+    const token = window.localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${backendUrl}/api/payments/sync`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ orderId }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Unable to check payment status.");
+      }
+
+      if (!data.paid) {
+        window.alert("Payment not confirmed yet. If money is debited, open My Payments and tap Refresh after a moment.");
+        return;
+      }
+
+      if (source === "cart") {
+        setCartItems([]);
+      }
+      const nextOrder = {
+        ...data.order,
+        itemCount: items.reduce((total, item) => total + item.quantity, 0),
+      };
+      setConfirmedOrder(nextOrder);
+      setOrders((currentOrders) => [nextOrder, ...currentOrders.filter((order) => order.id !== nextOrder.id)]);
+      navigate("order-confirmed", undefined);
+    } catch (error) {
+      window.alert(error.message || "Unable to check payment status.");
+    } finally {
+      setIsCheckingOut(false);
+    }
+  };
+
   const startPayment = async (checkoutProducts, source = "cart", userOverride) => {
     const currentUser = userOverride || authUser;
     if (!currentUser) {
@@ -1120,6 +1320,7 @@ function Home() {
         throw new Error(orderData?.error || "Unable to create payment order.");
       }
 
+      let paymentHandled = false;
       const razorpay = new window.Razorpay({
         key: orderData.key,
         amount: orderData.amount,
@@ -1134,6 +1335,7 @@ function Home() {
           color: "#b10c8f",
         },
         handler: async (response) => {
+          paymentHandled = true;
           try {
             const verifyResponse = await fetch(`${backendUrl}/api/payments/verify`, {
               method: "POST",
@@ -1155,10 +1357,12 @@ function Home() {
             if (source === "cart") {
               setCartItems([]);
             }
-            setConfirmedOrder({
+            const nextOrder = {
               ...verifyData.order,
               itemCount: items.reduce((total, item) => total + item.quantity, 0),
-            });
+            };
+            setConfirmedOrder(nextOrder);
+            setOrders((currentOrders) => [nextOrder, ...currentOrders.filter((order) => order.id !== nextOrder.id)]);
             navigate("order-confirmed", undefined);
           } catch (error) {
             window.alert(error.message || "Payment verification failed.");
@@ -1167,7 +1371,13 @@ function Home() {
           }
         },
         modal: {
-          ondismiss: () => setIsCheckingOut(false),
+          ondismiss: () => {
+            if (paymentHandled) {
+              setIsCheckingOut(false);
+              return;
+            }
+            syncPaymentStatus(orderData.orderId, source, items);
+          },
         },
       });
 
@@ -1514,6 +1724,16 @@ function Home() {
           onBack={continueShopping}
         />
       )}
+      {view === "payments" && (
+        <PaymentsPage
+          orders={orders}
+          isLoading={isLoadingOrders}
+          onBack={() => navigate("home", "#home")}
+          onRefresh={loadOrders}
+          onOpenReceipt={showOrderReceipt}
+          onPrint={printOrderReceipt}
+        />
+      )}
       {view === "order-confirmed" && (
         <main className="page-view order-confirmed-view">
           <div className="order-confirmed-card">
@@ -1539,9 +1759,18 @@ function Home() {
                 </div>
               </div>
             )}
-            <button className="checkout-btn" type="button" onClick={() => navigate("home", "#home")}>
-              Continue Shopping
-            </button>
+            <OrderReceipt order={confirmedOrder} />
+            <div className="receipt-action-row">
+              <button className="checkout-btn" type="button" onClick={() => printOrderReceipt()}>
+                Print / Download PDF
+              </button>
+              <button className="continue-shopping-btn" type="button" onClick={() => navigate("payments")}>
+                My Payments
+              </button>
+              <button className="continue-shopping-btn" type="button" onClick={() => navigate("home", "#home")}>
+                Continue Shopping
+              </button>
+            </div>
           </div>
         </main>
       )}
@@ -1557,9 +1786,3 @@ function Home() {
 }
 
 export default Home;
-
-
-
-
-
-

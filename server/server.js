@@ -100,6 +100,19 @@ const normalizeOrderItems = (items) => {
     .filter((item) => item.productId && item.name && item.unitPrice > 0);
 };
 
+const serializeOrder = (order) => ({
+  id: order._id,
+  items: order.items,
+  amount: order.amount,
+  currency: order.currency,
+  status: order.status,
+  receipt: order.receipt,
+  razorpayOrderId: order.razorpayOrderId,
+  razorpayPaymentId: order.razorpayPaymentId,
+  createdAt: order.createdAt,
+  paidAt: order.updatedAt,
+});
+
 const createToken = (user) => {
   return jwt.sign(
     { id: user._id, phone: user.phone },
@@ -349,17 +362,88 @@ app.post("/api/payments/verify", authenticateToken, async (req, res) => {
 
     return res.json({
       message: "Payment verified and order confirmed.",
-      order: {
-        id: order._id,
-        amount: order.amount,
-        currency: order.currency,
-        status: order.status,
-        razorpayPaymentId: order.razorpayPaymentId,
-      },
+      order: serializeOrder(order),
     });
   } catch (error) {
     console.error("Payment verification error:", error);
     return res.status(500).json({ error: "Unable to verify payment." });
+  }
+});
+
+app.post("/api/payments/sync", authenticateToken, async (req, res) => {
+  try {
+    if (!razorpay) {
+      return res.status(500).json({ error: "Razorpay keys are not configured on the server." });
+    }
+
+    const { orderId } = req.body;
+    if (!orderId) {
+      return res.status(400).json({ error: "Order ID is required." });
+    }
+
+    const order = await Order.findOne({ _id: orderId, user: req.user.id });
+    if (!order) {
+      return res.status(404).json({ error: "Order not found." });
+    }
+
+    if (order.status === "paid") {
+      return res.json({ paid: true, order: serializeOrder(order) });
+    }
+
+    const payments = await razorpay.orders.fetchPayments(order.razorpayOrderId);
+    const paidPayment = payments.items.find((payment) => (
+      payment.status === "captured" || payment.status === "authorized"
+    ));
+
+    if (!paidPayment) {
+      return res.json({ paid: false, order: serializeOrder(order) });
+    }
+
+    order.status = "paid";
+    order.razorpayPaymentId = paidPayment.id;
+    await order.save();
+
+    return res.json({ paid: true, order: serializeOrder(order) });
+  } catch (error) {
+    console.error("Payment sync error:", error);
+    return res.status(500).json({ error: "Unable to sync payment status." });
+  }
+});
+
+app.get("/api/orders", authenticateToken, async (req, res) => {
+  try {
+    const recentOrders = await Order.find({ user: req.user.id })
+      .sort({ updatedAt: -1 })
+      .limit(50);
+    const createdOrders = recentOrders.filter((order) => order.status !== "paid");
+
+    if (razorpay && createdOrders.length > 0) {
+      await Promise.all(createdOrders.map(async (order) => {
+        try {
+          const payments = await razorpay.orders.fetchPayments(order.razorpayOrderId);
+          const paidPayment = payments.items.find((payment) => (
+            payment.status === "captured" || payment.status === "authorized"
+          ));
+
+          if (paidPayment) {
+            order.status = "paid";
+            order.razorpayPaymentId = paidPayment.id;
+            await order.save();
+          }
+        } catch (error) {
+          console.error("Order refresh sync error:", error);
+        }
+      }));
+    }
+
+    const orders = await Order.find({ user: req.user.id, status: "paid" })
+      .sort({ updatedAt: -1 })
+      .limit(50);
+
+    return res.json({ orders: orders.map(serializeOrder) });
+  } catch (error) {
+    console.error("Order history error:", error);
+    return res.status(500).json({ error: "Unable to load orders." });
   }
 });
 
