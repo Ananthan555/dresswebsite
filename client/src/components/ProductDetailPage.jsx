@@ -27,15 +27,15 @@ const isJewelleryProduct = (product) => {
 };
 
 const sizeOptions = [
-  { label: "XS", delta: 0 },
-  { label: "S", delta: -122 },
-  { label: "M", delta: -56 },
-  { label: "L", delta: 6 },
-  { label: "XL", delta: 12 },
-  { label: "XXL", delta: 11 },
-  { label: "XXXL", delta: 12 },
-  { label: "4XL", delta: 13 },
-  { label: "5XL", delta: 14 },
+  { label: "XS" },
+  { label: "S" },
+  { label: "M" },
+  { label: "L" },
+  { label: "XL" },
+  { label: "XXL" },
+  { label: "XXXL" },
+  { label: "4XL" },
+  { label: "5XL" },
 ];
 
 const getProductReviewStats = (product) => {
@@ -81,8 +81,7 @@ function ProductDetailPage({
 
   const basePrice = getPriceValue(product?.price);
   const hasSizeOptions = !isJewelleryProduct(product);
-  const selectedSizeData = sizeOptions.find((size) => size.label === selectedSize) || sizeOptions[0];
-  const selectedPrice = hasSizeOptions ? Math.max(299, basePrice + selectedSizeData.delta) : basePrice;
+  const selectedPrice = basePrice;
   const originalPrice = Math.round(selectedPrice * 1.11);
   const selectedProduct = {
     ...product,
@@ -196,7 +195,6 @@ function ProductDetailPage({
               <h3>Select Size</h3>
               <div className="size-grid">
                 {sizeOptions.map((size) => {
-                  const sizePrice = Math.max(299, basePrice + size.delta);
                   return (
                     <button
                       key={size.label}
@@ -205,7 +203,7 @@ function ProductDetailPage({
                       onClick={() => setSelectedSize(size.label)}
                     >
                       <span>{size.label}</span>
-                      <small>{formatPrice(sizePrice)}</small>
+                      <small>{formatPrice(basePrice)}</small>
                     </button>
                   );
                 })}
