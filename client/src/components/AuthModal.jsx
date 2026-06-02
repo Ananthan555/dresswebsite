@@ -1,8 +1,8 @@
 import { Eye, EyeOff } from "lucide-react";
 import { useEffect, useState } from "react";
 
-const backendUrl = "https://dress-backend-bgni.onrender.com";
-const AUTH_TIMEOUT_MS = 12000;
+const backendUrl = import.meta.env.VITE_API_URL || "https://dress-backend-bgni.onrender.com";
+const AUTH_TIMEOUT_MS = 45000;
 
 function AuthModal({ open, onClose, onAuthSuccess, initialMode = "login" }) {
   const [mode, setMode] = useState(initialMode);
@@ -188,7 +188,7 @@ onAuthSuccess({
     } catch (error) {
       const errorMessage =
         error.name === "AbortError"
-          ? "Login is taking too long. Please try again in a moment."
+          ? "Server is waking up. Please try login again in a few seconds."
           : "Unable to reach backend. Please try again.";
       showAuthAlert(errorMessage);
     } finally {
