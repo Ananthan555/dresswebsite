@@ -1,4 +1,4 @@
-import { useFashionData } from "../hooks/useFashionData";
+﻿import { useFashionData } from "../hooks/useFashionData";
 import { useEffect, useMemo, useRef, useState } from "react";
 import BrandNavbar from "./Navbar";
 import AuthModal from "./AuthModal";
@@ -308,7 +308,7 @@ const createKurtiProducts = (baseId, category, names, images, prices) => (
 
 const sectionPrices = {
   kurti: {
-    all: [330, 426, 598, 720, 849, 999, 1199, 1399, 1599, 1799],
+    all: [1, 426, 598, 720, 849, 999, 1199, 1399, 1599, 1799],
     anarkali: [699, 849, 999, 1199, 1299, 1399, 1499, 1599, 1749, 1899],
     rayon: [399, 449, 499, 549, 599, 649, 699, 749, 799, 899],
     cotton: [330, 399, 449, 499, 549, 599, 649, 699, 799, 899],
