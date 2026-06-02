@@ -9,7 +9,7 @@ const getPriceValue = (price) => {
 
 const formatPrice = (amount) => `Rs ${amount.toLocaleString("en-IN")}`;
 
-function CartView({ title, eyebrow, products, onRemoveFromCart, onUpdateCartQuantity, onBack }) {
+function CartView({ title, eyebrow, products, onRemoveFromCart, onUpdateCartQuantity, onBack, onCheckout, isCheckingOut }) {
   const subtotal = products.reduce((total, product) => (
     total + getPriceValue(product.price) * product.quantity
   ), 0);
@@ -95,8 +95,8 @@ function CartView({ title, eyebrow, products, onRemoveFromCart, onUpdateCartQuan
               <Truck size={17} />
               Free delivery on all orders!
             </p>
-            <button className="checkout-btn" type="button">
-              Proceed to Checkout
+            <button className="checkout-btn" type="button" onClick={onCheckout} disabled={isCheckingOut}>
+              {isCheckingOut ? "Opening Payment..." : "Proceed to Checkout"}
               <ShoppingBag size={18} />
             </button>
             <button className="continue-shopping-btn" type="button" onClick={onBack}>
@@ -118,7 +118,7 @@ function CartView({ title, eyebrow, products, onRemoveFromCart, onUpdateCartQuan
   );
 }
 
-function ProductPage({ title, eyebrow, products, likedItems, onLike, onAddToCart, onBuyNow, onRemoveFromCart, onUpdateCartQuantity, onRemoveFromLike, isCartView = false, isLikesView = false, onBack, onOpenProduct }) {
+function ProductPage({ title, eyebrow, products, likedItems, onLike, onAddToCart, onBuyNow, onRemoveFromCart, onUpdateCartQuantity, onRemoveFromLike, onCheckout, isCheckingOut = false, isCartView = false, isLikesView = false, onBack, onOpenProduct }) {
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredProducts = useMemo(() => {
@@ -138,6 +138,8 @@ function ProductPage({ title, eyebrow, products, likedItems, onLike, onAddToCart
         onRemoveFromCart={onRemoveFromCart}
         onUpdateCartQuantity={onUpdateCartQuantity}
         onBack={onBack}
+        onCheckout={onCheckout}
+        isCheckingOut={isCheckingOut}
       />
     );
   }

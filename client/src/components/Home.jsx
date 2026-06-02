@@ -20,8 +20,19 @@ import { topwearSectionImages } from "../data/topwearSectionImages";
 import { pantSectionImages } from "../data/pantSectionImages";
 import { palazzoSectionImages } from "../data/palazzoSectionImages";
 import { jewellerySectionImages } from "../data/jewellerySectionImages";
+const backendUrl = import.meta.env.VITE_API_URL || "https://dress-backend-bgni.onrender.com";
 const getUserStorageKey = (userId) => `dress_website_store_${userId}`;
 const getCartItemKey = (product) => `${product.id}-${product.selectedSize || "default"}`;
+const getPriceValue = (price) => Number(String(price || "").replace(/[^\d]/g, "")) || 0;
+
+const normalizeCheckoutItem = (product) => ({
+  productId: product.id,
+  name: product.name,
+  category: product.category,
+  selectedSize: product.selectedSize,
+  quantity: product.quantity || 1,
+  unitPrice: getPriceValue(product.price),
+});
 
 const readUserStore = (userId) => {
   if (!userId) {
@@ -843,6 +854,8 @@ function Home() {
   const [lastCartTarget, setLastCartTarget] = useState({ view: "home", target: "#trending" });
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [detailReturnTarget, setDetailReturnTarget] = useState({ view: "home", target: "#trending" });
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [confirmedOrder, setConfirmedOrder] = useState(null);
   const historyReadyRef = useRef(false);
 
   useEffect(() => {
@@ -1062,6 +1075,109 @@ function Home() {
     navigate(lastCartTarget.view, lastCartTarget.target, lastCartTarget);
   };
 
+  const startPayment = async (checkoutProducts, source = "cart", userOverride) => {
+    const currentUser = userOverride || authUser;
+    if (!currentUser) {
+      setPendingAction({ type: "checkout", products: checkoutProducts, source });
+      setAuthModalMode("login");
+      setAuthModalOpen(true);
+      return;
+    }
+
+    if (!window.Razorpay) {
+      window.alert("Payment script is still loading. Please try again.");
+      return;
+    }
+
+    const items = checkoutProducts.map(normalizeCheckoutItem).filter((item) => item.unitPrice > 0);
+    if (!items.length) {
+      window.alert("Valid checkout items are required.");
+      return;
+    }
+
+    const token = window.localStorage.getItem("token");
+    if (!token) {
+      setPendingAction({ type: "checkout", products: checkoutProducts, source });
+      setAuthModalMode("login");
+      setAuthModalOpen(true);
+      return;
+    }
+
+    setIsCheckingOut(true);
+
+    try {
+      const orderResponse = await fetch(`${backendUrl}/api/payments/create-order`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ items }),
+      });
+      const orderData = await orderResponse.json().catch(() => ({}));
+
+      if (!orderResponse.ok) {
+        throw new Error(orderData?.error || "Unable to create payment order.");
+      }
+
+      const razorpay = new window.Razorpay({
+        key: orderData.key,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "Women's Style",
+        description: source === "cart" ? "Cart Checkout" : "Dress Purchase",
+        order_id: orderData.razorpayOrderId,
+        prefill: {
+          contact: currentUser.phone,
+        },
+        theme: {
+          color: "#b10c8f",
+        },
+        handler: async (response) => {
+          try {
+            const verifyResponse = await fetch(`${backendUrl}/api/payments/verify`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                orderId: orderData.orderId,
+                ...response,
+              }),
+            });
+            const verifyData = await verifyResponse.json().catch(() => ({}));
+
+            if (!verifyResponse.ok) {
+              throw new Error(verifyData?.error || "Payment verification failed.");
+            }
+
+            if (source === "cart") {
+              setCartItems([]);
+            }
+            setConfirmedOrder({
+              ...verifyData.order,
+              itemCount: items.reduce((total, item) => total + item.quantity, 0),
+            });
+            navigate("order-confirmed", undefined);
+          } catch (error) {
+            window.alert(error.message || "Payment verification failed.");
+          } finally {
+            setIsCheckingOut(false);
+          }
+        },
+        modal: {
+          ondismiss: () => setIsCheckingOut(false),
+        },
+      });
+
+      razorpay.open();
+    } catch (error) {
+      window.alert(error.message || "Unable to start payment.");
+      setIsCheckingOut(false);
+    }
+  };
+
   const handleAuthSuccess = (user) => {
     const userStore = readUserStore(user.id);
     setAuthUser(user);
@@ -1082,6 +1198,12 @@ function Home() {
       toggleLike(pendingAction.product);
     }
 
+    if (pendingAction.type === "checkout") {
+      window.setTimeout(() => {
+        startPayment(pendingAction.products, pendingAction.source, user);
+      }, 0);
+    }
+
     setPendingAction(null);
   };
 
@@ -1097,16 +1219,18 @@ function Home() {
   };
 
   const handleBuyNow = (product) => {
-    // add to cart and navigate to cart view
     if (!authUser) {
-      setPendingAction({ type: "addToCart", product, returnTarget: { view: "cart" } });
+      setPendingAction({ type: "checkout", products: [{ ...product, quantity: 1 }], source: "buy-now" });
       setAuthModalMode("login");
       setAuthModalOpen(true);
       return;
     }
 
-    addToCart(product, { view: "cart" });
-    navigate("cart", undefined);
+    startPayment([{ ...product, quantity: 1 }], "buy-now");
+  };
+
+  const handleCartCheckout = () => {
+    startPayment(cartItems, "cart");
   };
 
   const openProductDetail = (product, returnTarget = { view, target: undefined }) => {
@@ -1384,9 +1508,42 @@ function Home() {
           onBuyNow={handleBuyNow}
           onRemoveFromCart={removeFromCart}
           onUpdateCartQuantity={updateCartQuantity}
+          onCheckout={handleCartCheckout}
+          isCheckingOut={isCheckingOut}
           isCartView
           onBack={continueShopping}
         />
+      )}
+      {view === "order-confirmed" && (
+        <main className="page-view order-confirmed-view">
+          <div className="order-confirmed-card">
+            <span className="order-confirmed-icon">✓</span>
+            <p className="order-confirmed-eyebrow">Payment verified</p>
+            <h2>Order Confirmed</h2>
+            <p>
+              Your payment is secure and your order has been saved.
+            </p>
+            {confirmedOrder && (
+              <div className="order-confirmed-details">
+                <div>
+                  <span>Order ID</span>
+                  <strong>{confirmedOrder.id}</strong>
+                </div>
+                <div>
+                  <span>Items</span>
+                  <strong>{confirmedOrder.itemCount}</strong>
+                </div>
+                <div>
+                  <span>Amount</span>
+                  <strong>Rs {Number(confirmedOrder.amount || 0).toLocaleString("en-IN")}</strong>
+                </div>
+              </div>
+            )}
+            <button className="checkout-btn" type="button" onClick={() => navigate("home", "#home")}>
+              Continue Shopping
+            </button>
+          </div>
+        </main>
       )}
       <Newsletter />
       <AuthModal

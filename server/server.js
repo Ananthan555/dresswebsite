@@ -4,6 +4,8 @@ import cors from "cors";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import crypto from "crypto";
+import Razorpay from "razorpay";
 
 dotenv.config();
 const app = express();
@@ -11,6 +13,15 @@ const PORT = process.env.PORT || 5000;
 const MONGO_URL = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/dress_website";
 const JWT_SECRET = process.env.JWT_SECRET || "change-this-secret-key";
 const JWT_EXPIRES_IN = "1d";
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID;
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
+
+const razorpay = RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET
+  ? new Razorpay({
+      key_id: RAZORPAY_KEY_ID,
+      key_secret: RAZORPAY_KEY_SECRET,
+    })
+  : null;
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -40,8 +51,54 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", userSchema);
 
+const orderItemSchema = new mongoose.Schema({
+  productId: { type: String, required: true },
+  name: { type: String, required: true },
+  category: { type: String },
+  selectedSize: { type: String },
+  quantity: { type: Number, required: true, min: 1 },
+  unitPrice: { type: Number, required: true, min: 1 },
+}, { _id: false });
+
+const orderSchema = new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  items: { type: [orderItemSchema], required: true },
+  amount: { type: Number, required: true, min: 1 },
+  currency: { type: String, default: "INR" },
+  status: { type: String, enum: ["created", "paid"], default: "created" },
+  razorpayOrderId: { type: String, required: true, unique: true },
+  razorpayPaymentId: { type: String },
+  razorpaySignature: { type: String },
+  receipt: { type: String, required: true },
+}, { timestamps: true });
+
+const Order = mongoose.model("Order", orderSchema);
+
 const normalizePhone = (phone) => String(phone || "").replace(/\D/g, "");
 const isValidPhone = (phone) => /^\d{10}$/.test(phone);
+const getPriceValue = (price) => Number(String(price || "").replace(/[^\d]/g, "")) || 0;
+
+const normalizeOrderItems = (items) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    return [];
+  }
+
+  return items
+    .map((item) => {
+      const quantity = Math.max(1, Math.min(Number(item.quantity) || 1, 10));
+      const unitPrice = getPriceValue(item.unitPrice || item.price);
+
+      return {
+        productId: String(item.productId || item.id || "").slice(0, 80),
+        name: String(item.name || "").trim().slice(0, 120),
+        category: String(item.category || "").trim().slice(0, 80),
+        selectedSize: item.selectedSize ? String(item.selectedSize).slice(0, 20) : undefined,
+        quantity,
+        unitPrice,
+      };
+    })
+    .filter((item) => item.productId && item.name && item.unitPrice > 0);
+};
 
 const createToken = (user) => {
   return jwt.sign(
@@ -205,6 +262,104 @@ app.get("/api/profile", authenticateToken, async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Unable to load profile." });
+  }
+});
+
+app.post("/api/payments/create-order", authenticateToken, async (req, res) => {
+  try {
+    if (!razorpay) {
+      return res.status(500).json({ error: "Razorpay keys are not configured on the server." });
+    }
+
+    const items = normalizeOrderItems(req.body.items);
+    const amount = items.reduce((total, item) => total + item.unitPrice * item.quantity, 0);
+
+    if (!items.length || amount <= 0) {
+      return res.status(400).json({ error: "Valid cart items are required." });
+    }
+
+    const receipt = `rcpt_${Date.now()}_${String(req.user.id).slice(-6)}`;
+    const razorpayOrder = await razorpay.orders.create({
+      amount: amount * 100,
+      currency: "INR",
+      receipt,
+      notes: {
+        userId: req.user.id,
+      },
+    });
+
+    const order = await Order.create({
+      user: req.user.id,
+      items,
+      amount,
+      currency: razorpayOrder.currency,
+      razorpayOrderId: razorpayOrder.id,
+      receipt,
+    });
+
+    return res.status(201).json({
+      key: RAZORPAY_KEY_ID,
+      orderId: order._id,
+      razorpayOrderId: razorpayOrder.id,
+      amount: razorpayOrder.amount,
+      currency: razorpayOrder.currency,
+    });
+  } catch (error) {
+    console.error("Razorpay order creation error:", error);
+    return res.status(500).json({ error: "Unable to create payment order." });
+  }
+});
+
+app.post("/api/payments/verify", authenticateToken, async (req, res) => {
+  try {
+    const {
+      orderId,
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+    } = req.body;
+
+    if (!orderId || !razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ error: "Payment verification details are required." });
+    }
+
+    const order = await Order.findOne({
+      _id: orderId,
+      user: req.user.id,
+      razorpayOrderId: razorpay_order_id,
+    });
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found." });
+    }
+
+    const expectedSignature = crypto
+      .createHmac("sha256", RAZORPAY_KEY_SECRET)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest("hex");
+
+    if (expectedSignature !== razorpay_signature) {
+      return res.status(400).json({ error: "Payment signature verification failed." });
+    }
+
+    order.status = "paid";
+    order.razorpayPaymentId = razorpay_payment_id;
+    order.razorpaySignature = razorpay_signature;
+    await order.save();
+
+    return res.json({
+      message: "Payment verified and order confirmed.",
+      order: {
+        id: order._id,
+        amount: order.amount,
+        currency: order.currency,
+        status: order.status,
+        razorpayPaymentId: order.razorpayPaymentId,
+      },
+    });
+  } catch (error) {
+    console.error("Payment verification error:", error);
+    return res.status(500).json({ error: "Unable to verify payment." });
   }
 });
 
