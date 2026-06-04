@@ -1364,8 +1364,10 @@ function Home() {
             setConfirmedOrder(nextOrder);
             setOrders((currentOrders) => [nextOrder, ...currentOrders.filter((order) => order.id !== nextOrder.id)]);
             navigate("order-confirmed", undefined);
-          } catch (error) {
-            window.alert(error.message || "Payment verification failed.");
+          } catch {
+            // Verify failed but Razorpay already processed the payment —
+            // sync directly with Razorpay to mark the order paid and show receipt
+            syncPaymentStatus(orderData.orderId, source, items);
           } finally {
             setIsCheckingOut(false);
           }
